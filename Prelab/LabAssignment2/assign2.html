@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tensor Creation in TensorFlow.js</title>
+
+    <!-- TensorFlow.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+</head>
+<body>
+    <h2>TensorFlow.js – Tensor Creation<br>Ayush D. Badwaik<br>CM23051</h2>
+    <h3>Create tensors of different dimensions (scalar, vector, matrix) and print them.</h3>
+
+    <script>
+        // =========================
+        // Scalar Tensor (0-D)
+        // =========================
+        const scalar = tf.scalar(10);
+        console.log("Scalar Tensor:");
+        scalar.print();
+        console.log("Shape:", scalar.shape);
+        console.log("Rank:", scalar.rank);
+
+        // =========================
+        // Vector Tensor (1-D)
+        // =========================
+        const vector = tf.tensor1d([1, 2, 3, 4, 5]);
+        console.log("\nVector Tensor:");
+        vector.print();
+        console.log("Shape:", vector.shape);
+        console.log("Rank:", vector.rank);
+
+        // =========================
+        // Matrix Tensor (2-D)
+        // =========================
+        const matrix = tf.tensor2d(
+            [
+                [1, 2, 3],
+                [4, 5, 6]
+            ]
+        );
+        console.log("\nMatrix Tensor:");
+        matrix.print();
+        console.log("Shape:", matrix.shape);
+        console.log("Rank:", matrix.rank);
+    </script>
+</body>
+</html>

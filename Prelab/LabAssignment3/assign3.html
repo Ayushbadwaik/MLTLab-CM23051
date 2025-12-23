@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tensor Reshape vs Flatten – TensorFlow.js</title>
+
+    <!-- TensorFlow.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .box {
+            background: #ffffff;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 5px solid #3498db;
+        }
+        pre {
+            background: #eef2f3;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        button {
+            padding: 10px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Tensor Reshape and Flatten (TensorFlow.js)</h1>
+
+    <!-- ================= Explanation Section ================= -->
+    <div class="box">
+        <h2>Concept Explanation</h2>
+        <p>
+            <b>reshape()</b> and <b>flatten()</b> are tensor operations used to modify the shape
+            of data without changing the total number of elements.
+        </p>
+
+        <ul>
+            <li><b>reshape()</b> changes a tensor into a user-defined shape while keeping the same data.</li>
+            <li><b>flatten()</b> converts a tensor of any dimension into a one-dimensional tensor.</li>
+        </ul>
+    </div>
+
+    <!-- ================= Difference Section ================= -->
+    <div class="box">
+        <h2>Difference Between reshape() and flatten()</h2>
+        <pre>
+reshape():
+- Output shape is user-defined
+- Total elements must remain the same
+- Used to reorganize tensor dimensions
+
+flatten():
+- Output is always 1-D
+- No shape input required
+- Used before feeding data into Dense layers
+        </pre>
+    </div>
+
+    <!-- ================= Demo Section ================= -->
+    <div class="box">
+        <h2>Live Demonstration</h2>
+        <button onclick="runDemo()">Run Tensor Operations</button>
+        <pre id="output"></pre>
+    </div>
+
+    <!-- ================= TensorFlow.js Logic ================= -->
+    <script>
+        function runDemo() {
+            const output = document.getElementById("output");
+            output.textContent = "";
+
+            // Original Tensor (2x3)
+            const tensor = tf.tensor2d(
+                [
+                    [1, 2, 3],
+                    [4, 5, 6]
+                ],
+                [2, 3]
+            );
+
+            output.textContent += "Original Tensor (2x3):\n";
+            output.textContent += tensor.toString() + "\n\n";
+
+            // Reshape to 3x2
+            const reshaped = tensor.reshape([3, 2]);
+            output.textContent += "After reshape() → (3x2):\n";
+            output.textContent += reshaped.toString() + "\n\n";
+
+            // Flatten to 1-D
+            const flattened = tensor.flatten();
+            output.textContent += "After flatten() → (1-D):\n";
+            output.textContent += flattened.toString() + "\n\n";
+
+            // Console output (for verification)
+            console.log("Original Tensor:");
+            tensor.print();
+
+            console.log("Reshaped Tensor:");
+            reshaped.print();
+
+            console.log("Flattened Tensor:");
+            flattened.print();
+        }
+    </script>
+
+</body>
+</html>
