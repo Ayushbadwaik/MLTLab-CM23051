@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Study Hours vs Marks - Linear Regression</title>
+
+<!-- TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.12.0/dist/tf.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+
+<style>
+body { font-family: Arial; background:#f0f2f5; display:flex; justify-content:center; padding:30px; }
+.container { background:white; padding:25px; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.1); width:650px; }
+h2 { text-align:center; color:#333; }
+input[type=file], input[type=number] { padding:8px; margin:5px 0; width:60%; border-radius:6px; border:1px solid #ccc; }
+button { padding:8px 14px; margin-left:10px; border:none; border-radius:6px; cursor:pointer; background:#007bff; color:white; font-weight:bold; }
+button:hover { background:#0056b3; }
+.output { margin-top:12px; font-weight:bold; color:#444; }
+canvas { margin-top:20px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Ayush Badwaik [CM23051]<br> MLTL Prac 1 Linear Regression through Synthetic dataset<br>Study Hours vs Marks</h2>
+
+  <!-- Upload TXT -->
+  <input type="file" id="txtFile" accept=".txt">
+  <button onclick="trainModel()">Create Model</button>
+
+  <div class="output" id="metrics"></div>
+
+  <hr>
+
+  <!-- Predict input -->
+  <input type="number" id="hour" placeholder="Enter study hours">
+  <button onclick="predict()">Predict</button>
+
+  <div class="output" id="pred"></div>
+
+  <canvas id="chart" width="600"></canvas>
+</div>
+
+<script>
+let model, X = [], y = [], Xnorm = [], ynorm = [], preds = [], chart;
+let Xmin, Xmax, yMin, yMax;
+
+// TRAIN MODEL
+function trainModel() {
+  const file = document.getElementById("txtFile").files[0];
+  if (!file) return alert("Please upload a TXT file");
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const lines = e.target.result.trim().split("\n");
+
+    X = [];
+    y = [];
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) return;
+      const parts = line.split(/[\s,]+/);
+      const h = parseFloat(parts[0]);
+      const m = parseFloat(parts[1]);
+      if (!isNaN(h) && !isNaN(m)) {
+        X.push(h);
+        y.push(m);
+      }
+    });
+
+    if (X.length === 0) return alert("TXT data invalid");
+
+    // NORMALIZATION
+    Xmin = Math.min(...X); Xmax = Math.max(...X);
+    yMin = Math.min(...y); yMax = Math.max(...y);
+    Xnorm = X.map(v => (v - Xmin) / (Xmax - Xmin));
+    ynorm = y.map(v => (v - yMin) / (yMax - yMin));
+
+    // CREATE MODEL
+    model = tf.sequential();
+    model.add(tf.layers.dense({ units: 1, inputShape: [1] }));
+    model.compile({ optimizer: "sgd", loss: "meanSquaredError" });
+
+    // TRAIN MODEL
+    model.fit(tf.tensor2d(Xnorm, [Xnorm.length,1]), tf.tensor1d(ynorm), {
+      epochs: 300,
+      callbacks: {
+        onTrainEnd: () => {
+          // PREDICT ALL FOR GRAPH
+          const predsNorm = model.predict(tf.tensor2d(Xnorm, [Xnorm.length,1])).dataSync();
+          preds = Array.from(predsNorm).map(v => v*(yMax - yMin) + yMin);
+
+          // METRICS
+          let mse = 0, mae = 0;
+          for (let i=0;i<y.length;i++){
+            mse += Math.pow(y[i]-preds[i],2);
+            mae += Math.abs(y[i]-preds[i]);
+          }
+          mse /= y.length; mae /= y.length;
+          document.getElementById("metrics").innerText = `📊 MSE: ${mse.toFixed(2)} | MAE: ${mae.toFixed(2)}`;
+
+          drawGraph();
+          alert("✅ Model trained successfully! Now use console or input box for predictions.");
+        }
+      }
+    });
+  };
+  reader.readAsText(file);
+}
+
+// PREDICT MARKS
+function predict() {
+  if(!model) return alert("Train model first");
+
+  const hour = parseFloat(document.getElementById("hour").value);
+  if(isNaN(hour)) return alert("Enter valid number");
+
+  const hourNorm = (hour - Xmin)/(Xmax - Xmin);
+  const yPredNorm = model.predict(tf.tensor2d([hourNorm],[1,1])).dataSync()[0];
+  const yPred = yPredNorm*(yMax - yMin) + yMin;
+
+  document.getElementById("pred").innerText = `🎯 Predicted Marks: ${yPred.toFixed(2)}`;
+
+  // Add predicted point to chart
+  if(chart){
+    chart.data.datasets.push({
+      label: "Predicted Point",
+      data: [{x: hour, y: yPred}],
+      backgroundColor: "green",
+      showLine: false,
+      pointRadius: 7
+    });
+    chart.update();
+  }
+}
+
+// DRAW GRAPH
+function drawGraph(){
+  if(chart) chart.destroy();
+
+  const ctx = document.getElementById("chart").getContext("2d");
+
+  chart = new Chart(ctx,{
+    type: "scatter",
+    data: {
+      datasets: [
+        {
+          label:"Actual Marks",
+          data: X.map((x,i)=>({x,y:y[i]})),
+          backgroundColor:"blue"
+        },
+        {
+          label:"Regression Line",
+          data: X.map((x,i)=>({x,y:preds[i]})),
+          type:"line",
+          borderColor:"red",
+          fill:false,
+          tension:0.1
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{ legend:{ position:"top" } },
+      scales:{
+        x:{ title:{ display:true, text:"Study Hours" } },
+        y:{ title:{ display:true, text:"Marks" } }
+      }
+    }
+  });
+}
+
+// OPTIONAL: Predict from console
+window.predictMarks = function(hour){
+  if(!model) return console.log("Train model first");
+  const hNorm = (hour - Xmin)/(Xmax - Xmin);
+  const yNorm = model.predict(tf.tensor2d([hNorm],[1,1])).dataSync()[0];
+  const yVal = yNorm*(yMax - yMin) + yMin;
+  console.log(`📌 Predicted Marks for ${hour} hours: ${yVal.toFixed(2)}`);
+  return yVal;
+}
+</script>
+</body>
+</html>
