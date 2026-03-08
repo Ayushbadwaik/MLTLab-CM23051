@@ -1,458 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MobileNet Image Classifier</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@latest"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            min-height: 100vh;
-            color: #1e293b;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 48px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-        }
-        
-        h1 {
-            text-align: center;
-            font-size: 2.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #10b981, #059669);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #64748b;
-            font-size: 1.1rem;
-            margin-bottom: 40px;
-        }
-        
-        .upload-area {
-            border: 3px dashed #cbd5e1;
-            border-radius: 20px;
-            padding: 60px 40px;
-            text-align: center;
-            background: #f8fafc;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            margin-bottom: 32px;
-        }
-        
-        .upload-area:hover {
-            border-color: #10b981;
-            background: #f0fdf4;
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15);
-        }
-        
-        .upload-area.dragover {
-            border-color: #10b981;
-            background: #ecfdf5;
-            transform: scale(1.02);
-        }
-        
-        .upload-icon {
-            font-size: 4.5rem;
-            background: linear-gradient(135deg, #10b981, #059669);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 20px;
-        }
-        
-        .upload-text {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #475569;
-            margin-bottom: 8px;
-        }
-        
-        .file-info {
-            font-size: 0.95rem;
-            color: #94a3b8;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .analyze-btn {
-            width: 100%;
-            padding: 20px 32px;
-            font-size: 18px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
-            margin-bottom: 40px;
-        }
-        
-        .analyze-btn:hover:not(:disabled) {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.4);
-        }
-        
-        .analyze-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .image-container {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .image-preview {
-            max-width: 100%;
-            max-height: 450px;
-            border-radius: 20px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
-            display: none;
-        }
-        
-        .results-section {
-            display: none;
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .results-section.show {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .results-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-        
-        .predictions-table {
-            width: 100%;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        
-        .predictions-table thead th {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            padding: 20px 24px;
-            text-align: left;
-            font-weight: 600;
-            color: #475569;
-            font-size: 0.95rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        
-        .predictions-table tbody td {
-            padding: 20px 24px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-        }
-        
-        .predictions-table tbody tr:hover {
-            background: #f8fafc;
-        }
-        
-        .predictions-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .rank-cell {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #10b981;
-            width: 80px;
-        }
-        
-        .class-name {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: #1e293b;
-            max-width: 300px;
-        }
-        
-        .confidence-cell {
-            position: relative;
-        }
-        
-        .confidence-bar {
-            height: 8px;
-            background: #e2e8f0;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 4px;
-        }
-        
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #10b981, #059669);
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 4px;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
-        }
-        
-        .confidence-text {
-            font-weight: 600;
-            color: #059669;
-            font-size: 1.1rem;
-            margin-top: 4px;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 60px;
-            color: #64748b;
-            display: none;
-        }
-        
-        .spinner {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #10b981;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 24px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @media (max-width: 768px) {
-            .container { padding: 20px 16px; }
-            .card { padding: 32px 24px; }
-            h1 { font-size: 2.2rem; }
-            .predictions-table { font-size: 0.9rem; }
-            .predictions-table thead th,
-            .predictions-table tbody td { padding: 16px 12px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="card">
-            <h1>MobileNet Image Classifier<br>Ayush D. Badwaik</h1>
-            <p class="subtitle">Upload any image and get instant classification using Google's MobileNet (1000+ ImageNet classes)</p>
-            
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📁</div>
-                <div class="upload-text">Click here or drag & drop your image</div>
-                <div class="file-info">JPG, PNG, GIF, WebP • Max 10MB • Works offline after model loads</div>
-                <input type="file" id="fileInput" class="file-input" accept="image/*">
-            </div>
-            
-            <button id="analyzeBtn" class="analyze-btn" disabled> Classify Image</button>
-            
-            <div class="image-container">
-                <img id="imagePreview" class="image-preview" alt="Image preview">
-            </div>
-            
-            <div id="loading" class="loading">
-                <div class="spinner"></div>
-                Loading MobileNet model and analyzing your image...
-            </div>
-            
-            <div id="resultsSection" class="results-section">
-                <h2 class="results-title">Top 5 Predictions</h2>
-                <table class="predictions-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Class Name</th>
-                            <th>Confidence</th>
-                        </tr>
-                    </thead>
-                    <tbody id="predictionsTable">
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 
-    <script>
-        let model = null;
-        let currentImageSrc = null;
-        
-        // DOM Elements
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const imagePreview = document.getElementById('imagePreview');
-        const loading = document.getElementById('loading');
-        const resultsSection = document.getElementById('resultsSection');
-        const predictionsTable = document.getElementById('predictionsTable');
-        
-        // Drag & Drop Events
-        uploadArea.addEventListener('click', () => fileInput.click());
-        
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-        
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-        
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleImageUpload(files[0]);
-            }
-        });
-        
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleImageUpload(e.target.files[0]);
-            }
-        });
-        
-        function handleImageUpload(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please upload an image file (JPG, PNG, GIF, WebP)');
-                return;
-            }
-            
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                alert('File too large! Maximum 10MB allowed.');
-                return;
-            }
-            
-            currentImageSrc = URL.createObjectURL(file);
-            imagePreview.src = currentImageSrc;
-            imagePreview.style.display = 'block';
-            analyzeBtn.disabled = false;
-            analyzeBtn.textContent = ' Classify Image';
-            resultsSection.classList.remove('show');
-        }
-        
-        // Load MobileNet model
-        async function loadMobileNet() {
-            try {
-                console.log('Loading MobileNet model...');
-                model = await mobilenet.load();
-                console.log('✅ MobileNet loaded successfully!');
-                return true;
-            } catch (error) {
-                console.error('❌ Failed to load MobileNet:', error);
-                alert('Failed to load MobileNet model. Please refresh the page.');
-                return false;
-            }
-        }
-        
-        // Analyze image with MobileNet
-        async function analyzeImage() {
-            if (!model || !currentImageSrc) {
-                alert('Please upload an image first!');
-                return;
-            }
-            
-            analyzeBtn.disabled = true;
-            loading.style.display = 'block';
-            resultsSection.classList.remove('show');
-            
-            try {
-                console.log('🔍 Analyzing image...');
-                const predictions = await model.classify(imagePreview);
-                
-                displayPredictions(predictions);
-                console.log(' Analysis complete:', predictions);
-                
-            } catch (error) {
-                console.error(' Analysis failed:', error);
-                alert('Image analysis failed. Please try again.');
-            } finally {
-                loading.style.display = 'none';
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = ' Analyze Again';
-            }
-        }
-        
-        // Display top 5 predictions in table
-        function displayPredictions(predictions) {
-            // Sort by confidence (descending)
-            predictions.sort((a, b) => b.probability - a.probability);
-            const top5 = predictions.slice(0, 5);
-            
-            predictionsTable.innerHTML = top5.map((pred, index) => `
-                <tr>
-                    <td class="rank-cell">${index + 1}️⃣</td>
-                    <td class="class-name">${pred.className}</td>
-                    <td class="confidence-cell">
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" style="width: ${pred.probability * 100}%"></div>
-                        </div>
-                        <div class="confidence-text">${(pred.probability * 100).toFixed(1)}%</div>
-                    </td>
-                </tr>
-            `).join('');
-            
-            resultsSection.classList.add('show');
-        }
-        
-        // Event Listeners
-        analyzeBtn.addEventListener('click', analyzeImage);
-        
-        // Keyboard shortcut
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter' && !analyzeBtn.disabled) {
-                analyzeBtn.click();
-            }
-        });
-        
-        // Initialize app
-        async function init() {
-            const modelLoaded = await loadMobileNet();
-            if (modelLoaded) {
-                console.log('🎉 MobileNet Image Classifier ready!');
-            }
-        }
-        
-        // Start the app
-        init();
-    </script>
+<meta charset="UTF-8">
+<title>Image Classification</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+body{
+margin:0;
+font-family:'Inter',sans-serif;
+background:linear-gradient(135deg,#eef2ff,#f8fafc);
+color:#1f2937;
+display:flex;
+flex-direction:column;
+align-items:center;
+min-height:100vh;
+}
+
+header{
+text-align:center;
+margin-top:35px;
+margin-bottom:30px;
+}
+
+.title{
+font-size:34px;
+font-weight:700;
+color:#1e3a8a;
+letter-spacing:-0.5px;
+}
+
+.subtitle{
+font-size:15px;
+color:#64748b;
+margin-top:6px;
+}
+
+.container{
+width:92%;
+max-width:1150px;
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:28px;
+}
+
+@media(max-width:900px){
+.container{grid-template-columns:1fr}
+}
+
+.card{
+background:white;
+border-radius:16px;
+padding:26px;
+box-shadow:0 10px 30px rgba(0,0,0,0.08);
+transition:0.3s ease;
+}
+
+.card:hover{
+transform:translateY(-4px);
+box-shadow:0 16px 40px rgba(0,0,0,0.12);
+}
+
+.card-title{
+font-size:20px;
+font-weight:600;
+margin-bottom:14px;
+color:#334155;
+}
+
+.upload{
+border:2px dashed #cbd5e1;
+border-radius:12px;
+padding:28px;
+text-align:center;
+cursor:pointer;
+color:#64748b;
+transition:0.25s;
+font-size:14px;
+}
+
+.upload:hover{
+background:#f1f5f9;
+border-color:#94a3b8;
+}
+
+.preview{
+margin-top:18px;
+width:100%;
+border-radius:10px;
+}
+
+button{
+margin-top:15px;
+padding:11px 20px;
+border:none;
+border-radius:8px;
+font-weight:600;
+cursor:pointer;
+font-size:14px;
+color:white;
+transition:0.25s;
+}
+
+.btn-green{
+background:#22c55e;
+}
+
+.btn-green:hover{
+background:#16a34a;
+}
+
+.btn-purple{
+background:#6366f1;
+}
+
+.btn-purple:hover{
+background:#4f46e5;
+}
+
+.status{
+font-size:13px;
+margin-top:8px;
+color:#64748b;
+}
+
+.results{
+margin-top:16px;
+}
+
+.row{
+background:#f8fafc;
+padding:10px;
+border-radius:8px;
+margin-top:10px;
+transition:0.2s;
+}
+
+.row:hover{
+background:#f1f5f9;
+}
+
+.bar{
+height:10px;
+border-radius:6px;
+margin-top:6px;
+transition:width 0.8s ease;
+}
+
+.spinner{
+border:3px solid #e5e7eb;
+border-top:3px solid #6366f1;
+border-radius:50%;
+width:22px;
+height:22px;
+animation:spin 1s linear infinite;
+margin:auto;
+}
+
+@keyframes spin{
+0%{transform:rotate(0)}
+100%{transform:rotate(360deg)}
+}
+
+footer{
+margin-top:40px;
+margin-bottom:25px;
+font-size:12px;
+color:#94a3b8;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="title">Image Classification Demo</div>
+<div class="subtitle">Ayush Badwaik [CM23051]</div>
+</header>
+
+<div class="container">
+
+<div class="card">
+
+<div class="card-title">MobileNet (Pretrained)</div>
+
+<div class="upload" id="upload1">
+Click or drag an image here
+<input type="file" id="file1" hidden>
+</div>
+
+<img id="preview1" class="preview">
+
+<button id="analyze1" class="btn-green" disabled>Analyze Image</button>
+
+<div id="status1" class="status">Loading MobileNet...</div>
+
+<div id="results1" class="results"></div>
+
+</div>
+
+
+<div class="card">
+
+<div class="card-title">Custom Model</div>
+
+<div class="upload" id="upload2">
+Click or drag an image here
+<input type="file" id="file2" hidden>
+</div>
+
+<img id="preview2" class="preview">
+
+<button id="analyze2" class="btn-purple" disabled>Analyze Image</button>
+
+<div id="status2" class="status">Loading model...</div>
+
+<div id="results2" class="results"></div>
+
+</div>
+
+</div>
+
+<footer>
+TensorFlow.js Image Classification
+</footer>
+
+<script>
+
+let mobilenetModel
+let customModel
+let metadata
+
+async function loadModels(){
+
+await tf.setBackend("cpu")
+await tf.ready()
+
+console.log("TensorFlow backend:",tf.getBackend())
+
+mobilenetModel=await mobilenet.load()
+
+document.getElementById("status1").innerText="MobileNet ready"
+
+metadata=await fetch("metadata.json").then(r=>r.json())
+
+customModel=await tf.loadLayersModel("model.json")
+
+console.log("MODEL LOADED SUCCESSFULLY")
+
+document.getElementById("status2").innerText="Custom model ready"
+
+}
+
+window.onload=loadModels
+
+
+function setupUpload(uploadId,fileId,previewId,buttonId){
+
+const upload=document.getElementById(uploadId)
+const file=document.getElementById(fileId)
+const preview=document.getElementById(previewId)
+const button=document.getElementById(buttonId)
+
+upload.onclick=()=>file.click()
+
+upload.ondragover=e=>e.preventDefault()
+
+upload.ondrop=e=>{
+e.preventDefault()
+file.files=e.dataTransfer.files
+showPreview()
+}
+
+file.onchange=showPreview
+
+function showPreview(){
+
+const reader=new FileReader()
+
+reader.onload=e=>{
+preview.src=e.target.result
+button.disabled=false
+}
+
+reader.readAsDataURL(file.files[0])
+
+}
+
+}
+
+setupUpload("upload1","file1","preview1","analyze1")
+setupUpload("upload2","file2","preview2","analyze2")
+
+
+function displayResults(results,container,color){
+
+container.innerHTML=""
+
+results.forEach((r,i)=>{
+
+const row=document.createElement("div")
+row.className="row"
+
+const label=document.createElement("div")
+label.innerText=`${i+1}. ${r.className} — ${(r.probability*100).toFixed(2)}%`
+
+const bar=document.createElement("div")
+bar.className="bar"
+bar.style.width=(r.probability*100)+"%"
+bar.style.background=color
+
+row.appendChild(label)
+row.appendChild(bar)
+
+container.appendChild(row)
+
+})
+
+}
+
+
+
+document.getElementById("analyze1").onclick=async()=>{
+
+const img=document.getElementById("preview1")
+
+document.getElementById("results1").innerHTML='<div class="spinner"></div>'
+
+const predictions=await mobilenetModel.classify(img)
+
+displayResults(predictions.slice(0,5),
+document.getElementById("results1"),
+"#22c55e")
+
+}
+
+
+
+document.getElementById("analyze2").onclick=async()=>{
+
+const img=document.getElementById("preview2")
+
+document.getElementById("results2").innerHTML='<div class="spinner"></div>'
+
+const scores=tf.tidy(()=>{
+
+let tensor=tf.browser.fromPixels(img,3)
+
+tensor=tf.image.resizeBilinear(tensor,[224,224])
+
+tensor=tensor.toFloat()
+
+tensor=tensor.div(127.5).sub(1)
+
+tensor=tensor.expandDims(0)
+
+const prediction=customModel.predict(tensor)
+
+return prediction.dataSync()
+
+})
+
+let results=[]
+
+for(let i=0;i<scores.length;i++){
+
+results.push({
+className:metadata.labels[i],
+probability:scores[i]
+})
+
+}
+
+results.sort((a,b)=>b.probability-a.probability)
+
+displayResults(results.slice(0,5),
+document.getElementById("results2"),
+"#6366f1")
+
+}
+
+</script>
+
 </body>
 </html>
