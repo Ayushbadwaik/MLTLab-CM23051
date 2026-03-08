@@ -1,563 +1,373 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Advanced Emotion & Sarcasm Analyzer</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            min-height: 100vh;
-            color: #1e293b;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 48px;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-        }
-        
-        h1 {
-            text-align: center;
-            font-size: 2.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 40px;
-            letter-spacing: -0.02em;
-        }
-        
-        .input-group {
-            position: relative;
-            margin-bottom: 24px;
-        }
-        
-        textarea {
-            width: 100%;
-            height: 160px;
-            padding: 24px;
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            font-size: 16px;
-            font-family: inherit;
-            background: #fafbff;
-            color: #1e293b;
-            resize: vertical;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            line-height: 1.6;
-        }
-        
-        textarea:focus {
-            outline: none;
-            border-color: #3b82f6;
-            background: #ffffff;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-            transform: translateY(-2px);
-        }
-        
-        textarea::placeholder {
-            color: #94a3b8;
-        }
-        
-        .analyze-btn {
-            width: 100%;
-            padding: 20px 32px;
-            font-size: 18px;
-            font-weight: 600;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            color: white;
-            border: none;
-            border-radius: 16px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.3);
-        }
-        
-        .analyze-btn:hover:not(:disabled) {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
-        }
-        
-        .analyze-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
-        }
-        
-        .live-preview {
-            margin-top: 32px;
-            padding: 32px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-            border: 1px solid rgba(59, 130, 246, 0.15);
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .live-preview.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .final-analysis {
-            margin-top: 40px;
-            padding: 40px;
-            border-radius: 24px;
-            background: white;
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .final-analysis.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .sentiment-bar {
-            width: 100%;
-            height: 12px;
-            background: #e2e8f0;
-            border-radius: 8px;
-            overflow: hidden;
-            margin: 24px 0;
-            position: relative;
-        }
-        
-        .bar-fill {
-            height: 100%;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 8px;
-        }
-        
-        .positive-fill { 
-            background: linear-gradient(90deg, #10b981, #059669); 
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-        }
-        
-        .negative-fill { 
-            background: linear-gradient(90deg, #ef4444, #dc2626); 
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
-        }
-        
-        .sarcasm-fill { 
-            background: linear-gradient(90deg, #f59e0b, #d97706); 
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
-        }
-        
-        .sentiment-title {
-            font-size: 2.2rem;
-            font-weight: 800;
-            margin: 20px 0;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .emotion-icon { 
-            font-size: 3.5rem; 
-            margin: 24px 0; 
-        }
-        
-        .confidence-text { 
-            font-size: 1.3rem; 
-            font-weight: 600;
-            margin: 20px 0;
-            color: #475569;
-        }
-        
-        .happy { color: #10b981; }
-        .sad { color: #ef4444; }
-        .sarcastic { color: #f59e0b; }
-        
-        .sarcasm-indicator {
-            position: absolute;
-            top: -12px;
-            right: 12px;
-            font-size: 1.8rem;
-            animation: bounce 2s infinite;
-        }
-        
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-8px); }
-            60% { transform: translateY(-4px); }
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 48px;
-            color: #64748b;
-        }
-        
-        .spinner {
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 56px;
-            height: 56px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 24px;
-            margin-top: 32px;
-        }
-        
-        .metric-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(248,250,252,0.9));
-            padding: 24px;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid rgba(226, 232, 240, 0.6);
-            transition: transform 0.2s ease;
-        }
-        
-        .metric-card:hover {
-            transform: translateY(-4px);
-        }
-        
-        .metric-value {
-            font-size: 2.2rem;
-            font-weight: 800;
-            display: block;
-            line-height: 1;
-        }
-        
-        .metric-label {
-            font-size: 0.95rem;
-            color: #64748b;
-            font-weight: 500;
-            margin-top: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-message {
-            padding: 16px;
-            border-radius: 12px;
-            margin-top: 16px;
-            font-weight: 500;
-            text-align: center;
-        }
-        
-        .status-positive { background: rgba(16, 185, 129, 0.1); color: #065f46; }
-        .status-negative { background: rgba(239, 68, 68, 0.1); color: #991b1b; }
-        .status-sarcastic { background: rgba(245, 158, 11, 0.1); color: #92400e; }
-        
-        @media (max-width: 768px) {
-            .container { padding: 20px 16px; }
-            .card { padding: 32px 24px; }
-            h1 { font-size: 2.2rem; }
-            .sentiment-title { font-size: 1.8rem; }
-            .metrics-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        }
-    </style>
+
+<meta charset="UTF-8">
+<title>Text Sentiment Analysis</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:'Poppins',sans-serif;
+background:linear-gradient(135deg,#dbeafe,#eff6ff);
+margin:0;
+padding:40px;
+text-align:center;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:40px;
+border-radius:14px;
+box-shadow:0 10px 25px rgba(0,0,0,0.1);
+}
+
+h1{
+margin-bottom:5px;
+color:#1e3a8a;
+}
+
+.subtitle{
+color:#475569;
+margin-bottom:30px;
+}
+
+button{
+background:#2563eb;
+border:none;
+color:white;
+padding:12px 22px;
+margin:10px;
+border-radius:8px;
+cursor:pointer;
+font-size:15px;
+transition:0.3s;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+textarea{
+width:100%;
+height:80px;
+padding:12px;
+border-radius:8px;
+border:1px solid #cbd5f5;
+font-size:15px;
+}
+
+.status{
+margin-top:15px;
+font-weight:600;
+color:#1e40af;
+}
+
+.resultBox{
+display:flex;
+gap:20px;
+margin-top:30px;
+}
+
+.card{
+flex:1;
+background:#f1f5ff;
+padding:20px;
+border-radius:12px;
+}
+
+.modelTitle{
+font-weight:600;
+margin-bottom:10px;
+color:#1e3a8a;
+}
+
+.conf{
+font-size:18px;
+margin-top:10px;
+}
+
+canvas{
+margin-top:30px;
+}
+
+</style>
+
 </head>
+
 <body>
-    <div class="container">
-        <div class="card">
-            <h1>Emotion & Sarcasm Analyzer<br>Ayush D. Badwaik [CM23051]</h1>
-            
-            <div class="input-group">
-                <textarea 
-                    id="textInput" 
-                    placeholder="Start typing your message... (Ctrl+Enter for detailed report)"
-                    maxlength="500"
-                ></textarea>
-            </div>
-            
-            <button id="analyzeBtn" class="analyze-btn">Generate Detailed Analysis</button>
-            
-            <div id="loading" class="loading" style="display: none;">
-                <div class="spinner"></div>
-                Loading TensorFlow.js AI Model...
-            </div>
-            
-            <!-- Live Preview -->
-            <div id="liveResult" class="live-preview">
-                <div class="sentiment-title" id="liveLabel">Type to begin analysis...</div>
-                <div class="sentiment-bar">
-                    <div class="bar-fill positive-fill" id="liveFill" style="width: 0%;"></div>
-                    <span id="liveSarcasmIcon" class="sarcasm-indicator" style="display: none;">🤨</span>
-                </div>
-                <div id="liveConfidence" class="confidence-text"></div>
-                <div id="liveStatus" class="status-message"></div>
-            </div>
 
-            <!-- Final Analysis -->
-            <div id="finalResult" class="final-analysis">
-                <div class="emotion-icon" id="emotionIcon"></div>
-                <div class="sentiment-title" id="finalLabel"></div>
-                <div class="sentiment-bar">
-                    <div class="bar-fill positive-fill" id="finalFill" style="width: 0%;"></div>
-                    <span id="finalSarcasmIcon" class="sarcasm-indicator" style="display: none;">🤨</span>
-                </div>
-                <div id="finalConfidence" class="confidence-text"></div>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <span id="posScore" class="metric-value">0%</span>
-                        <span class="metric-label">Positive</span>
-                    </div>
-                    <div class="metric-card">
-                        <span id="negScore" class="metric-value">0%</span>
-                        <span class="metric-label">Negative</span>
-                    </div>
-                    <div class="metric-card">
-                        <span id="sarcScore" class="metric-value">0%</span>
-                        <span class="metric-label">Sarcasm</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="container">
 
-    <script>
-        let model = null;
-        let metadata = null;
-        
-        const MODEL_URL = 'https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/model.json';
-        const METADATA_URL = 'https://storage.googleapis.com/tfjs-models/tfjs/sentiment_cnn_v1/metadata.json';
+<h1>Text Sentiment Analysis</h1>
+<div class="subtitle">Ayush Badwaik — CM23051</div>
 
-        // DOM Elements
-        const textInput = document.getElementById('textInput');
-        const analyzeBtn = document.getElementById('analyzeBtn');
-        const loading = document.getElementById('loading');
-        const liveResult = document.getElementById('liveResult');
-        const finalResult = document.getElementById('finalResult');
-        
-        const liveLabel = document.getElementById('liveLabel');
-        const liveFill = document.getElementById('liveFill');
-        const liveConfidence = document.getElementById('liveConfidence');
-        const liveSarcasmIcon = document.getElementById('liveSarcasmIcon');
-        const liveStatus = document.getElementById('liveStatus');
-        
-        const emotionIcon = document.getElementById('emotionIcon');
-        const finalLabel = document.getElementById('finalLabel');
-        const finalFill = document.getElementById('finalFill');
-        const finalConfidence = document.getElementById('finalConfidence');
-        const finalSarcasmIcon = document.getElementById('finalSarcasmIcon');
-        const posScore = document.getElementById('posScore');
-        const negScore = document.getElementById('negScore');
-        const sarcScore = document.getElementById('sarcScore');
+<input type="file" id="csvFile">
 
-        let analysisTimeout;
+<br>
 
-        async function loadModel() {
-            try {
-                loading.style.display = 'block';
-                analyzeBtn.disabled = true;
-                analyzeBtn.textContent = 'Loading AI Model...';
+<button onclick="loadCSV()">Upload CSV</button>
+<button onclick="trainModels()">Train Model</button>
 
-                console.log('Loading model...');
-                const modelPromise = tf.loadLayersModel(MODEL_URL);
-                const metadataPromise = fetch(METADATA_URL).then(r => r.json());
+<div id="status" class="status">Waiting for dataset...</div>
 
-                [model, metadata] = await Promise.all([modelPromise, metadataPromise]);
-                
-                console.log('Model loaded successfully!');
-                loading.style.display = 'none';
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = '🔍 Generate Detailed Analysis';
-                
-            } catch (error) {
-                console.error('Model loading failed:', error);
-                loading.innerHTML = `<div class="spinner"></div>Error loading model. Please refresh.`;
-                analyzeBtn.disabled = false;
-            }
-        }
+<br><br>
 
-        function padSequences(sequences, maxLen) {
-            return sequences.map(seq => {
-                if (seq.length > maxLen) {
-                    seq = seq.slice(-maxLen);
-                }
-                while (seq.length < maxLen) {
-                    seq.unshift(0);
-                }
-                return seq;
-            });
-        }
+<textarea id="sentence" placeholder="Enter sentence for sentiment analysis"></textarea>
 
-        function predictSentiment(text) {
-            if (!model || !text.trim() || !metadata) {
-                return { positive: 0.5, confidence: 0 };
-            }
+<br>
 
-            try {
-                const cleaned = text.toLowerCase().replace(/[^\w\s]/g, '').split(' ').slice(0, 100);
-                const sequence = cleaned.map(word => {
-                    const index = metadata.word_index[word];
-                    return (index && index + metadata.index_from) || 2;
-                });
+<button onclick="predict()">Analyze</button>
 
-                const padded = padSequences([sequence], metadata.max_len);
-                const inputTensor = tf.tensor2d(padded, [1, metadata.max_len]);
+<div class="resultBox">
 
-                const prediction = model.predict(inputTensor);
-                const score = prediction.dataSync()[0];
-                
-                inputTensor.dispose();
-                prediction.dispose();
+<div class="card">
+<div class="modelTitle">RNN Model</div>
+<div id="rnnResult">-</div>
+<div class="conf" id="rnnConf"></div>
+</div>
 
-                return {
-                    positive: Math.max(0, Math.min(1, score)),
-                    confidence: Math.max(score, 1 - score)
-                };
-            } catch (error) {
-                console.error('Prediction error:', error);
-                return { positive: 0.5, confidence: 0 };
-            }
-        }
+<div class="card">
+<div class="modelTitle">Dense Model</div>
+<div id="denseResult">-</div>
+<div class="conf" id="denseConf"></div>
+</div>
 
-        function detectSarcasm(text) {
-            const sarcasmPhrases = [
-                'yeah right', 'sure', 'oh great', 'awesome', 'fantastic', 'brilliant',
-                'perfect', 'amazing', 'wow', 'genius', 'love it', 'so good', 
-                'not bad', 'big deal', 'how original', 'shocking'
-            ];
-            
-            const lowerText = text.toLowerCase();
-            let score = 0;
-            
-            sarcasmPhrases.forEach(phrase => {
-                if (lowerText.includes(phrase)) {
-                    score += 1;
-                }
-            });
-            
-            return Math.min(score * 0.15, 1);
-        }
+</div>
 
-        function getEmotion(positiveScore, sarcasmScore) {
-            if (sarcasmScore > 0.25) {
-                return { icon: '🤨', label: 'Sarcastic', class: 'sarcastic' };
-            }
-            if (positiveScore > 0.65) {
-                return { icon: '😊', label: 'Happy', class: 'happy' };
-            }
-            if (positiveScore < 0.35) {
-                return { icon: '😞', label: 'Sad', class: 'sad' };
-            }
-            return { icon: '😐', label: 'Neutral', class: '' };
-        }
+<canvas id="chart"></canvas>
 
-        function updateLivePreview(result, sarcasm) {
-            const emotion = getEmotion(result.positive, sarcasm);
-            const confidence = result.confidence;
-            
-            liveLabel.innerHTML = `${emotion.icon} ${emotion.label}`;
-            liveLabel.className = `sentiment-title ${emotion.class}`;
-            
-            liveFill.className = `bar-fill ${sarcasm > 0.25 ? 'sarcasm-fill' : 
-                                        (result.positive > 0.5 ? 'positive-fill' : 'negative-fill')}`;
-            liveFill.style.width = `${confidence * 100}%`;
-            
-            liveConfidence.textContent = `${Math.round(confidence * 100)}% Confidence`;
-            liveSarcasmIcon.style.display = sarcasm > 0.25 ? 'block' : 'none';
-            
-            liveStatus.textContent = `Sarcasm: ${Math.round(sarcasm * 100)}%`;
-            liveStatus.className = `status-message ${sarcasm > 0.25 ? 'status-sarcastic' : 
-                                                  (result.positive > 0.5 ? 'status-positive' : 'status-negative')}`;
-            
-            liveResult.classList.add('show');
-        }
+</div>
 
-        function updateFinalAnalysis(result, sarcasm) {
-            const emotion = getEmotion(result.positive, sarcasm);
-            const confidence = result.confidence;
-            
-            emotionIcon.textContent = emotion.icon;
-            emotionIcon.className = `emotion-icon ${emotion.class}`;
-            finalLabel.innerHTML = `${emotion.icon} ${emotion.label}`;
-            finalLabel.className = `sentiment-title ${emotion.class}`;
-            
-            finalFill.className = `bar-fill ${sarcasm > 0.25 ? 'sarcasm-fill' : 
-                                           (result.positive > 0.5 ? 'positive-fill' : 'negative-fill')}`;
-            finalFill.style.width = `${confidence * 100}%`;
-            
-            finalConfidence.textContent = `${(confidence * 100).toFixed(1)}% Confidence`;
-            finalSarcasmIcon.style.display = sarcasm > 0.25 ? 'block' : 'none';
-            
-            posScore.textContent = `${Math.round(result.positive * 100)}%`;
-            negScore.textContent = `${Math.round((1 - result.positive) * 100)}%`;
-            sarcScore.textContent = `${Math.round(sarcasm * 100)}%`;
-            
-            finalResult.classList.add('show');
-        }
+<script>
 
-        textInput.addEventListener('input', () => {
-            clearTimeout(analysisTimeout);
-            
-            const text = textInput.value;
-            analysisTimeout = setTimeout(() => {
-                if (text.length > 2 && model) {
-                    const result = predictSentiment(text);
-                    const sarcasm = detectSarcasm(text);
-                    updateLivePreview(result, sarcasm);
-                } else {
-                    liveResult.classList.remove('show');
-                }
-            }, 250);
-        });
+let texts=[]
+let labels=[]
+let tokenizer={}
+let wordIndex=1
 
-        analyzeBtn.addEventListener('click', () => {
-            const text = textInput.value.trim();
-            if (!text || !model) return;
-            
-            analyzeBtn.disabled = true;
-            analyzeBtn.textContent = 'Analyzing...';
-            
-            const result = predictSentiment(text);
-            const sarcasm = detectSarcasm(text);
-            
-            updateFinalAnalysis(result, sarcasm);
-            
-            setTimeout(() => {
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = '🔍 Generate Detailed Analysis';
-            }, 800);
-        });
+let rnnModel
+let denseModel
 
-        textInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                analyzeBtn.click();
-            }
-        });
+// LOAD CSV
 
-        tf.ready().then(() => {
-            loadModel();
-        });
-    </script>
+function loadCSV(){
+
+const file=document.getElementById("csvFile").files[0]
+
+texts=[]
+labels=[]
+tokenizer={}
+wordIndex=1
+
+Papa.parse(file,{
+header:true,
+skipEmptyLines:true,
+complete:function(results){
+
+results.data.forEach(row=>{
+
+if(row.text && row.label!==undefined){
+
+texts.push(row.text.trim())
+labels.push(Number(row.label))
+
+}
+
+})
+
+buildTokenizer()
+
+document.getElementById("status").innerHTML=
+"Dataset Loaded ("+texts.length+" samples)"
+
+}
+})
+
+}
+
+// TOKENIZER
+
+function buildTokenizer(){
+
+texts.forEach(sentence=>{
+
+sentence.split(/\s+/).forEach(word=>{
+
+word=word.toLowerCase()
+
+if(!tokenizer[word]){
+tokenizer[word]=wordIndex++
+}
+
+})
+
+})
+
+}
+
+// ENCODE
+
+function encode(sentence){
+
+return sentence
+.toLowerCase()
+.split(/\s+/)
+.map(w=>tokenizer[w] || 0)
+
+}
+
+// PAD
+
+function pad(seq){
+
+const max=10
+
+while(seq.length<max)
+seq.push(0)
+
+return seq.slice(0,max)
+
+}
+
+// TRAIN MODELS
+
+async function trainModels(){
+
+document.getElementById("status").innerHTML="Training models... please wait"
+
+const xs=tf.tensor2d(texts.map(t=>pad(encode(t))))
+const ys=tf.tensor2d(labels,[labels.length,1])
+
+// RNN
+
+rnnModel=tf.sequential()
+
+rnnModel.add(tf.layers.embedding({
+inputDim:2000,
+outputDim:16,
+inputLength:10
+}))
+
+rnnModel.add(tf.layers.simpleRNN({units:12}))
+
+rnnModel.add(tf.layers.dense({
+units:1,
+activation:'sigmoid'
+}))
+
+rnnModel.compile({
+optimizer:'adam',
+loss:'binaryCrossentropy',
+metrics:['accuracy']
+})
+
+// Dense
+
+denseModel=tf.sequential()
+
+denseModel.add(tf.layers.embedding({
+inputDim:2000,
+outputDim:16,
+inputLength:10
+}))
+
+denseModel.add(tf.layers.flatten())
+
+denseModel.add(tf.layers.dense({
+units:1,
+activation:'sigmoid'
+}))
+
+denseModel.compile({
+optimizer:'adam',
+loss:'binaryCrossentropy'
+})
+
+await rnnModel.fit(xs,ys,{
+epochs:10,
+batchSize:8
+})
+
+await denseModel.fit(xs,ys,{
+epochs:10,
+batchSize:8
+})
+
+document.getElementById("status").innerHTML=
+"✔ Model trained successfully"
+
+}
+
+// PREDICT
+
+async function predict(){
+
+if(!rnnModel){
+alert("Train model first")
+return
+}
+
+const text=document.getElementById("sentence").value
+
+const input=tf.tensor2d([pad(encode(text))])
+
+const rnn=await rnnModel.predict(input).data()
+const dense=await denseModel.predict(input).data()
+
+const rnnLabel=rnn[0]>0.5?"Positive":"Negative"
+const denseLabel=dense[0]>0.5?"Positive":"Negative"
+
+document.getElementById("rnnResult").innerHTML=rnnLabel
+document.getElementById("denseResult").innerHTML=denseLabel
+
+document.getElementById("rnnConf").innerHTML=
+"Confidence: "+(rnn[0]*100).toFixed(2)+"%"
+
+document.getElementById("denseConf").innerHTML=
+"Confidence: "+(dense[0]*100).toFixed(2)+"%"
+
+drawChart(rnn[0],dense[0])
+
+}
+
+// GRAPH
+
+function drawChart(rnn,dense){
+
+const ctx=document.getElementById("chart")
+
+new Chart(ctx,{
+type:'bar',
+data:{
+labels:["RNN Model","Dense Model"],
+datasets:[{
+label:"Confidence",
+data:[rnn,dense],
+backgroundColor:["#3b82f6","#60a5fa"]
+}]
+},
+options:{
+scales:{
+y:{
+beginAtZero:true,
+max:1
+}
+}
+}
+})
+
+}
+
+</script>
+
 </body>
 </html>
