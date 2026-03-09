@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>TensorFlow.js Model Storage Demo</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+height:100vh;
+font-family:'Comic Neue', cursive;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(120deg,#e0f7fa,#fce4ec,#e8f5e9);
+background-size:400% 400%;
+animation:bgMove 15s infinite alternate;
+}
+
+@keyframes bgMove{
+0%{background-position:0% 50%}
+100%{background-position:100% 50%}
+}
+
+.container{
+
+width:500px;
+padding:35px;
+
+background:rgba(255,255,255,0.7);
+backdrop-filter:blur(10px);
+
+border-radius:18px;
+
+box-shadow:0 10px 30px rgba(0,0,0,0.15);
+
+text-align:center;
+
+}
+
+h1{
+font-family:'Bangers', cursive;
+font-size:40px;
+letter-spacing:2px;
+color:#34495e;
+margin-bottom:25px;
+}
+
+button{
+
+font-family:'Comic Neue', cursive;
+font-weight:bold;
+
+padding:10px 18px;
+margin:6px;
+
+border:none;
+border-radius:10px;
+
+background:#5dade2;
+color:white;
+
+font-size:15px;
+
+cursor:pointer;
+transition:0.3s;
+
+}
+
+button:hover{
+
+transform:scale(1.05);
+background:#3498db;
+
+}
+
+input{
+
+margin-top:15px;
+padding:10px;
+font-size:16px;
+border-radius:8px;
+border:1px solid #ddd;
+width:180px;
+text-align:center;
+
+}
+
+.subtitle{
+
+margin-bottom:20px;
+color:#555;
+font-size:15px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>TensorFlow.js Model<br>Ayush D. Badwaik CM23051</h1>
+
+<div class="subtitle">
+Local Training • LocalStorage Save • Reload • Export
+</div>
+
+<button onclick="trainModel()">Train Model</button>
+<button onclick="saveModel()">Save Model</button>
+<button onclick="loadModel()">Reload Model</button>
+
+<br><br>
+
+<input id="userInput" type="number" placeholder="Enter X value">
+
+<br><br>
+
+<button onclick="predictOriginal()">Predict Original</button>
+<button onclick="predictLoaded()">Predict Reloaded</button>
+
+<br><br>
+
+<button onclick="exportModel()">Export Model</button>
+
+</div>
+
+<script>
+
+let model
+let loadedModel
+
+function log(msg){
+console.log(msg)
+}
+
+async function trainModel(){
+
+log("Training model...")
+
+model=tf.sequential()
+
+model.add(tf.layers.dense({
+units:1,
+inputShape:[1]
+}))
+
+model.compile({
+optimizer:'sgd',
+loss:'meanSquaredError'
+})
+
+const xs=tf.tensor2d([1,2,3,4,5],[5,1])
+const ys=tf.tensor2d([3,5,7,9,11],[5,1])
+
+await model.fit(xs,ys,{epochs:200})
+
+log("Model training completed ✔")
+
+}
+
+async function saveModel(){
+
+await model.save("localstorage://linear-model")
+
+log("Model saved to LocalStorage ✔")
+
+}
+
+async function loadModel(){
+
+loadedModel=await tf.loadLayersModel("localstorage://linear-model")
+
+log("Model loaded from LocalStorage ✔")
+
+}
+
+function getInput(){
+
+let x=document.getElementById("userInput").value
+
+if(x===""){
+alert("Enter input value")
+return null
+}
+
+return parseFloat(x)
+
+}
+
+function predictOriginal(){
+
+let x=getInput()
+if(x==null) return
+
+const pred=model.predict(tf.tensor2d([x],[1,1]))
+
+pred.data().then(v=>{
+
+log("Original model prediction for x="+x+" → "+v[0])
+
+})
+
+}
+
+function predictLoaded(){
+
+let x=getInput()
+if(x==null) return
+
+const pred=loadedModel.predict(tf.tensor2d([x],[1,1]))
+
+pred.data().then(v=>{
+
+log("Reloaded model prediction for x="+x+" → "+v[0])
+
+})
+
+}
+
+async function exportModel(){
+
+await model.save("downloads://linear-model")
+
+log("Model exported ✔ (model.json + weights.bin)")
+
+}
+
+</script>
+
+</body>
+</html>
