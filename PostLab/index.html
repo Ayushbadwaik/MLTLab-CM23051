@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Resume Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Literata:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #f5f2ed;
+  --surface: #ffffff;
+  --ink: #1a1714;
+  --ink2: #4a4540;
+  --ink3: #8a837a;
+  --accent: #c84b2f;
+  --accent2: #e8763a;
+  --gold: #d4a843;
+  --border: #e0dad3;
+  --border2: #cfc8bf;
+  --green: #2d7a4f;
+  --resume-bg: #ffffff;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--ink); font-family: 'DM Mono', monospace; font-weight: 300; min-height: 100vh; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--ink); color: #fff;
+  padding: 1.2rem 2.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header-logo { font-family: 'Syne', sans-serif; font-size: 1.3rem; font-weight: 800; letter-spacing: -.02em; }
+.header-logo span { color: var(--accent2); }
+.header-tag { font-size: .65rem; letter-spacing: .2em; text-transform: uppercase; color: #888; }
+.free-pill { background: var(--green); color: #fff; font-size: .6rem; letter-spacing: .15em; padding: .25rem .7rem; border-radius: 20px; text-transform: uppercase; }
+
+/* ── LAYOUT ── */
+.app { display: grid; grid-template-columns: 480px 1fr; min-height: calc(100vh - 56px); }
+@media (max-width: 1000px) { .app { grid-template-columns: 1fr; } }
+
+/* ── LEFT: FORM PANEL ── */
+.form-panel { border-right: 1px solid var(--border); background: var(--surface); overflow-y: auto; }
+
+.steps-bar {
+  display: flex; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: var(--surface); z-index: 10;
+}
+.step-tab {
+  flex: 1; padding: .7rem .4rem; text-align: center;
+  font-size: .58rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink3); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.step-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+.step-tab.done { color: var(--green); }
+
+.form-section { display: none; padding: 1.8rem; }
+.form-section.active { display: block; }
+
+.section-heading {
+  font-family: 'Syne', sans-serif; font-size: 1.15rem; font-weight: 700;
+  color: var(--ink); margin-bottom: .3rem;
+}
+.section-sub { font-size: .72rem; color: var(--ink3); margin-bottom: 1.5rem; line-height: 1.5; }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: .8rem; }
+.field-row.full { grid-template-columns: 1fr; }
+
+.field { display: flex; flex-direction: column; gap: .3rem; }
+.field label { font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); }
+.field input, .field textarea, .field select {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: .6rem .8rem;
+  font-family: 'DM Mono', monospace; font-size: .78rem; color: var(--ink);
+  transition: border-color .2s; resize: vertical;
+  outline: none;
+}
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); background: #fff; }
+.field textarea { min-height: 80px; }
+
+/* experience / education cards */
+.entry-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 1rem; margin-bottom: .8rem;
+  position: relative;
+}
+.entry-card-title {
+  font-family: 'Syne', sans-serif; font-size: .8rem; font-weight: 600;
+  color: var(--ink); margin-bottom: .8rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.btn-remove {
+  background: none; border: none; color: var(--ink3); cursor: pointer;
+  font-size: .7rem; padding: .2rem .4rem;
+  border-radius: 3px; transition: background .2s, color .2s;
+}
+.btn-remove:hover { background: #fde; color: var(--accent); }
+
+.btn-add {
+  width: 100%; padding: .65rem; margin-top: .3rem;
+  border: 1px dashed var(--border2); border-radius: 4px;
+  background: none; cursor: pointer; font-family: 'DM Mono', monospace;
+  font-size: .72rem; color: var(--ink3); transition: all .2s; letter-spacing: .05em;
+}
+.btn-add:hover { border-color: var(--accent); color: var(--accent); background: #fff8f6; }
+
+/* skills */
+.skills-wrap { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .6rem; }
+.skill-chip {
+  background: var(--ink); color: #fff; font-size: .65rem;
+  padding: .25rem .7rem; border-radius: 20px;
+  display: flex; align-items: center; gap: .4rem;
+}
+.skill-chip button { background: none; border: none; color: rgba(255,255,255,.5); cursor: pointer; font-size: .7rem; line-height: 1; padding: 0; }
+.skill-chip button:hover { color: #fff; }
+.skills-input-row { display: flex; gap: .5rem; }
+.skills-input-row input { flex: 1; }
+.skills-input-row button {
+  padding: .6rem 1rem; background: var(--ink); color: #fff;
+  border: none; border-radius: 4px; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: .72rem;
+  transition: background .2s;
+}
+.skills-input-row button:hover { background: var(--accent); }
+
+/* nav buttons */
+.form-nav { display: flex; gap: .8rem; margin-top: 1.5rem; padding-top: 1.2rem; border-top: 1px solid var(--border); }
+.btn-prev {
+  padding: .75rem 1.4rem; border: 1px solid var(--border2);
+  border-radius: 4px; background: none; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: .72rem; color: var(--ink2);
+  transition: all .2s;
+}
+.btn-prev:hover { border-color: var(--ink); color: var(--ink); }
+.btn-next {
+  flex: 1; padding: .75rem; background: var(--ink); color: #fff;
+  border: none; border-radius: 4px; cursor: pointer;
+  font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700;
+  letter-spacing: .05em; transition: background .2s;
+}
+.btn-next:hover { background: var(--accent); }
+.btn-generate {
+  flex: 1; padding: .75rem; background: var(--accent); color: #fff;
+  border: none; border-radius: 4px; cursor: pointer;
+  font-family: 'Syne', sans-serif; font-size: .82rem; font-weight: 700;
+  letter-spacing: .05em; transition: background .2s;
+  position: relative; overflow: hidden;
+}
+.btn-generate:hover { background: var(--accent2); }
+.btn-generate:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── RIGHT: PREVIEW PANEL ── */
+.preview-panel { background: #d8d2cb; padding: 2rem; overflow-y: auto; position: relative; }
+
+.preview-toolbar {
+  display: flex; gap: .6rem; margin-bottom: 1.5rem; align-items: center;
+}
+.preview-toolbar span { font-size: .65rem; letter-spacing: .15em; text-transform: uppercase; color: var(--ink2); flex: 1; }
+.btn-download {
+  padding: .5rem 1.1rem; background: var(--ink); color: #fff;
+  border: none; border-radius: 4px; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: .7rem;
+  transition: background .2s;
+}
+.btn-download:hover { background: var(--accent); }
+.btn-download:disabled { opacity: .4; cursor: not-allowed; }
+
+/* loading overlay */
+.loading-overlay {
+  display: none; position: absolute; inset: 0;
+  background: rgba(216,210,203,.9);
+  flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
+  z-index: 20; backdrop-filter: blur(3px);
+}
+.loading-overlay.show { display: flex; }
+.loading-spinner {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 2px solid rgba(200,75,47,.2);
+  border-top-color: var(--accent);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--ink); }
+.loading-sub { font-size: .7rem; color: var(--ink3); letter-spacing: .08em; }
+
+/* empty state */
+.empty-preview {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 500px; gap: 1rem; text-align: center;
+}
+.empty-preview .big { font-size: 3.5rem; opacity: .2; }
+.empty-preview p { font-size: .78rem; color: var(--ink3); line-height: 1.6; max-width: 260px; }
+
+/* ── RESUME DOCUMENT ── */
+#resumeDoc {
+  background: var(--resume-bg);
+  width: 100%; max-width: 700px; margin: 0 auto;
+  padding: 3rem 3.2rem;
+  box-shadow: 0 4px 40px rgba(0,0,0,.15);
+  font-family: 'Literata', serif;
+  display: none;
+}
+#resumeDoc.show { display: block; }
+
+.resume-header-block { border-bottom: 2px solid var(--ink); padding-bottom: 1.2rem; margin-bottom: 1.4rem; }
+.resume-name { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800; letter-spacing: -.02em; color: var(--ink); line-height: 1; margin-bottom: .2rem; }
+.resume-title { font-size: .95rem; color: var(--accent); font-weight: 400; font-style: italic; margin-bottom: .7rem; }
+.resume-contact { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-size: .72rem; color: var(--ink2); font-family: 'DM Mono', monospace; }
+
+.resume-section { margin-bottom: 1.4rem; }
+.resume-section-title {
+  font-family: 'Syne', sans-serif; font-size: .65rem; font-weight: 700;
+  letter-spacing: .2em; text-transform: uppercase; color: var(--accent);
+  border-bottom: 1px solid var(--border); padding-bottom: .3rem; margin-bottom: .8rem;
+}
+.resume-summary { font-size: .85rem; line-height: 1.75; color: var(--ink2); }
+
+.resume-entry { margin-bottom: 1rem; }
+.resume-entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .15rem; }
+.resume-entry-title { font-family: 'Syne', sans-serif; font-size: .88rem; font-weight: 700; color: var(--ink); }
+.resume-entry-date { font-family: 'DM Mono', monospace; font-size: .65rem; color: var(--ink3); }
+.resume-entry-sub { font-size: .78rem; color: var(--accent); margin-bottom: .3rem; font-style: italic; }
+.resume-entry-bullets { padding-left: 1rem; }
+.resume-entry-bullets li { font-size: .8rem; line-height: 1.65; color: var(--ink2); margin-bottom: .15rem; }
+
+.resume-skills-grid { display: flex; flex-wrap: wrap; gap: .35rem; }
+.resume-skill-tag {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 3px; padding: .2rem .6rem;
+  font-family: 'DM Mono', monospace; font-size: .68rem; color: var(--ink2);
+}
+
+.ats-score-bar {
+  display: flex; align-items: center; gap: .8rem; margin-bottom: 1.5rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: .8rem 1rem;
+}
+.ats-score-num { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--green); min-width: 46px; }
+.ats-score-label { font-size: .65rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: .25rem; }
+.ats-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.ats-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 1s ease; }
+
+/* error */
+.error-msg { background: #fef2f2; border-left: 3px solid var(--accent); padding: .8rem 1rem; font-size: .78rem; color: #b91c1c; margin-top: 1rem; border-radius: 0 4px 4px 0; display: none; }
+.error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">AB Resume Builder<span>AI</span></div>
+    <div class="header-tag">Developed by Ayush Badwaik CM23051</div>
+  </div>
+  <span class="free-pill">Open Ended Practical MLTL Sem : 6</span>
+</div>
+
+<div class="app">
+
+  <!-- ── FORM PANEL ── -->
+  <div class="form-panel">
+    <div class="steps-bar">
+      <div class="step-tab active" data-step="0">01 · Info</div>
+      <div class="step-tab" data-step="1">02 · Experience</div>
+      <div class="step-tab" data-step="2">03 · Education</div>
+      <div class="step-tab" data-step="3">04 · Skills</div>
+      <div class="step-tab" data-step="4">05 · Generate</div>
+    </div>
+
+    <!-- STEP 1: Personal Info -->
+    <div class="form-section active" id="step0">
+      <div class="section-heading">Personal Info</div>
+      <div class="section-sub">Basic details that appear at the top of your resume.</div>
+      <div class="field-row">
+        <div class="field"><label>First Name</label><input type="text" id="firstName" placeholder="Ayush"/></div>
+        <div class="field"><label>Last Name</label><input type="text" id="lastName" placeholder="Badwaik"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field"><label>Job Title / Role</label><input type="text" id="jobTitle" placeholder="Full Stack Developer"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Email</label><input type="email" id="email" placeholder="ayushbadwaik.425@gmail.com"/></div>
+        <div class="field"><label>Phone</label><input type="text" id="phone" placeholder="+91 82088 32911"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Location</label><input type="text" id="location" placeholder="Nagpur, Maharashtra"/></div>
+        <div class="field"><label>LinkedIn (optional)</label><input type="text" id="linkedin" placeholder="linkedin.com/in/ayush"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field"><label>GitHub / Portfolio (optional)</label><input type="text" id="portfolio" placeholder="github.com/ayush"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>Brief Summary (AI will improve this)</label>
+          <textarea id="summary" placeholder="e.g. 2 years experience in web development, worked on React and Node.js projects..."></textarea>
+        </div>
+      </div>
+      <div class="form-nav">
+        <button class="btn-next" onclick="goStep(1)">Next: Experience →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Experience -->
+    <div class="form-section" id="step1">
+      <div class="section-heading">Work Experience</div>
+      <div class="section-sub">Add your jobs. AI will write powerful bullet points from your notes.</div>
+      <div id="expList"></div>
+      <button class="btn-add" onclick="addExp()">+ Add Experience</button>
+      <div class="error-msg" id="expError"></div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="goStep(0)">← Back</button>
+        <button class="btn-next" onclick="goStep(2)">Next: Education →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Education -->
+    <div class="form-section" id="step2">
+      <div class="section-heading">Education</div>
+      <div class="section-sub">Your academic background.</div>
+      <div id="eduList"></div>
+      <button class="btn-add" onclick="addEdu()">+ Add Education</button>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="goStep(1)">← Back</button>
+        <button class="btn-next" onclick="goStep(3)">Next: Skills →</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: Skills -->
+    <div class="form-section" id="step3">
+      <div class="section-heading">Skills</div>
+      <div class="section-sub">Add your technical and soft skills. Type and press Enter or click Add.</div>
+      <div class="skills-wrap" id="skillsWrap"></div>
+      <div class="skills-input-row">
+        <input type="text" id="skillInput" placeholder="e.g. React, Python, Photoshop..." onkeydown="if(event.key==='Enter'){addSkill();event.preventDefault()}"/>
+        <button onclick="addSkill()">Add</button>
+      </div>
+      <div style="margin-top:1rem">
+        <div class="field">
+          <label>Target Job Description (optional but recommended)</label>
+          <textarea id="jobDesc" placeholder="Paste the job description you are applying for. AI will tailor your resume to match it..." style="min-height:100px"></textarea>
+        </div>
+      </div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="goStep(2)">← Back</button>
+        <button class="btn-next" onclick="goStep(4)">Next: Generate →</button>
+      </div>
+    </div>
+
+    <!-- STEP 5: Generate -->
+    <div class="form-section" id="step4">
+      <div class="section-heading">Generate Resume</div>
+      <div class="section-sub">AI will analyse everything you entered, write powerful bullet points, craft a professional summary, and build your ATS-optimised resume.</div>
+
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1.1rem;margin-bottom:1rem;">
+        <div style="font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-bottom:.6rem;">What AI will do</div>
+        <div style="font-size:.78rem;color:var(--ink2);line-height:1.8;">
+          ✦ Write a powerful professional summary<br>
+          ✦ Turn your notes into strong bullet points<br>
+          ✦ Optimise keywords for ATS systems<br>
+          ✦ Score your resume out of 100<br>
+          ✦ Suggest improvements
+        </div>
+      </div>
+
+      <div class="field" style="margin-bottom:1rem">
+        <label>Resume Style</label>
+        <select id="resumeStyle">
+          <option value="professional">Professional & Corporate</option>
+          <option value="creative">Creative & Modern</option>
+          <option value="technical">Technical / Engineering</option>
+          <option value="fresher">Fresher / Entry Level</option>
+          <option value="executive">Executive / Senior Level</option>
+        </select>
+      </div>
+
+      <div class="error-msg" id="genError"></div>
+      <div class="form-nav">
+        <button class="btn-prev" onclick="goStep(3)">← Back</button>
+        <button class="btn-generate" id="generateBtn" onclick="generateResume()">✦ Build My Resume with AI</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREVIEW PANEL ── -->
+  <div class="preview-panel" id="previewPanel">
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
+      <div class="loading-text" id="loadingText">Analysing your data…</div>
+      <div class="loading-sub" id="loadingSub">Groq AI is building your resume</div>
+    </div>
+
+    <div class="preview-toolbar">
+      <span>Live Preview</span>
+      <button class="btn-download" id="downloadBtn" onclick="downloadPDF()" disabled>⬇ Download PDF</button>
+    </div>
+
+    <div class="empty-preview" id="emptyPreview">
+      <div class="big">📄</div>
+      <p>Fill in your details and click "Build My Resume" to see your AI-generated resume here.</p>
+    </div>
+
+    <div id="atsBar" style="display:none;max-width:700px;margin:0 auto 1rem"></div>
+    <div id="resumeDoc"></div>
+  </div>
+
+</div>
+
+<script>
+// ── STATE ──
+let currentStep = 0;
+let experiences = [];
+let educations = [];
+let skills = [];
+
+// ── STEP NAV ──
+function goStep(n) {
+  document.querySelectorAll('.form-section').forEach((s,i) => {
+    s.classList.toggle('active', i === n);
+  });
+  document.querySelectorAll('.step-tab').forEach((t,i) => {
+    t.classList.remove('active','done');
+    if (i === n) t.classList.add('active');
+    else if (i < n) t.classList.add('done');
+  });
+  currentStep = n;
+}
+
+// ── EXPERIENCE ──
+function addExp() {
+  const id = Date.now();
+  experiences.push({ id });
+  renderExpList();
+}
+function removeExp(id) {
+  experiences = experiences.filter(e => e.id !== id);
+  renderExpList();
+}
+function renderExpList() {
+  const list = document.getElementById('expList');
+  if (experiences.length === 0) {
+    list.innerHTML = '<div style="font-size:.75rem;color:var(--ink3);text-align:center;padding:1.5rem 0;">No experience added yet. Click below to add.</div>';
+    return;
+  }
+  list.innerHTML = experiences.map((e, i) => `
+    <div class="entry-card">
+      <div class="entry-card-title">
+        Experience ${i+1}
+        <button class="btn-remove" onclick="removeExp(${e.id})">✕ Remove</button>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Job Title</label><input type="text" id="exp_title_${e.id}" placeholder="Software Engineer" value="${e.title||''}"/></div>
+        <div class="field"><label>Company</label><input type="text" id="exp_company_${e.id}" placeholder="Tech Corp" value="${e.company||''}"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Start Date</label><input type="text" id="exp_start_${e.id}" placeholder="Jan 2022" value="${e.start||''}"/></div>
+        <div class="field"><label>End Date</label><input type="text" id="exp_end_${e.id}" placeholder="Present" value="${e.end||''}"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field"><label>Location</label><input type="text" id="exp_loc_${e.id}" placeholder="Nagpur / Remote" value="${e.location||''}"/></div>
+      </div>
+      <div class="field-row full">
+        <div class="field">
+          <label>What did you do? (AI will improve this)</label>
+          <textarea id="exp_desc_${e.id}" placeholder="e.g. Built REST APIs using Node.js, reduced load time by 40%, managed a team of 3...">${e.desc||''}</textarea>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function collectExp() {
+  return experiences.map(e => ({
+    title: document.getElementById(`exp_title_${e.id}`)?.value || '',
+    company: document.getElementById(`exp_company_${e.id}`)?.value || '',
+    start: document.getElementById(`exp_start_${e.id}`)?.value || '',
+    end: document.getElementById(`exp_end_${e.id}`)?.value || '',
+    location: document.getElementById(`exp_loc_${e.id}`)?.value || '',
+    desc: document.getElementById(`exp_desc_${e.id}`)?.value || ''
+  }));
+}
+
+// ── EDUCATION ──
+function addEdu() {
+  const id = Date.now();
+  educations.push({ id });
+  renderEduList();
+}
+function removeEdu(id) {
+  educations = educations.filter(e => e.id !== id);
+  renderEduList();
+}
+function renderEduList() {
+  const list = document.getElementById('eduList');
+  if (educations.length === 0) {
+    list.innerHTML = '<div style="font-size:.75rem;color:var(--ink3);text-align:center;padding:1.5rem 0;">No education added yet. Click below to add.</div>';
+    return;
+  }
+  list.innerHTML = educations.map((e, i) => `
+    <div class="entry-card">
+      <div class="entry-card-title">
+        Education ${i+1}
+        <button class="btn-remove" onclick="removeEdu(${e.id})">✕ Remove</button>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Degree</label><input type="text" id="edu_degree_${e.id}" placeholder="B.Tech Computer Science" value="${e.degree||''}"/></div>
+        <div class="field"><label>Institution</label><input type="text" id="edu_school_${e.id}" placeholder="VNIT Nagpur" value="${e.school||''}"/></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Year</label><input type="text" id="edu_year_${e.id}" placeholder="2020 – 2024" value="${e.year||''}"/></div>
+        <div class="field"><label>Grade / CGPA (optional)</label><input type="text" id="edu_grade_${e.id}" placeholder="8.5 CGPA" value="${e.grade||''}"/></div>
+      </div>
+    </div>`).join('');
+}
+function collectEdu() {
+  return educations.map(e => ({
+    degree: document.getElementById(`edu_degree_${e.id}`)?.value || '',
+    school: document.getElementById(`edu_school_${e.id}`)?.value || '',
+    year: document.getElementById(`edu_year_${e.id}`)?.value || '',
+    grade: document.getElementById(`edu_grade_${e.id}`)?.value || ''
+  }));
+}
+
+// ── SKILLS ──
+function addSkill() {
+  const input = document.getElementById('skillInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const parts = val.split(',').map(s => s.trim()).filter(Boolean);
+  parts.forEach(p => { if (!skills.includes(p)) skills.push(p); });
+  input.value = '';
+  renderSkills();
+}
+function removeSkill(s) {
+  skills = skills.filter(x => x !== s);
+  renderSkills();
+}
+function renderSkills() {
+  document.getElementById('skillsWrap').innerHTML = skills.map(s =>
+    `<div class="skill-chip">${s}<button onclick="removeSkill('${s.replace(/'/g,"\\'")}')">✕</button></div>`
+  ).join('');
+}
+
+// ── LOADING MESSAGES ──
+const loadingMessages = [
+  ['Analysing your experience…', 'Reading your career history'],
+  ['Crafting bullet points…', 'Making your achievements shine'],
+  ['Optimising for ATS…', 'Adding the right keywords'],
+  ['Writing your summary…', 'Making a strong first impression'],
+  ['Scoring your resume…', 'Almost done!']
+];
+let loadingInterval;
+function startLoading() {
+  let i = 0;
+  document.getElementById('loadingOverlay').classList.add('show');
+  loadingInterval = setInterval(() => {
+    const [t, s] = loadingMessages[i % loadingMessages.length];
+    document.getElementById('loadingText').textContent = t;
+    document.getElementById('loadingSub').textContent = s;
+    i++;
+  }, 2000);
+}
+function stopLoading() {
+  clearInterval(loadingInterval);
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// ── GENERATE ──
+async function generateResume() {
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName = document.getElementById('lastName').value.trim();
+  if (!firstName || !lastName) {
+    alert('Please fill in your name in Step 1 first.');
+    goStep(0); return;
+  }
+
+  const data = {
+    name: `${firstName} ${lastName}`,
+    jobTitle: document.getElementById('jobTitle').value,
+    email: document.getElementById('email').value,
+    phone: document.getElementById('phone').value,
+    location: document.getElementById('location').value,
+    linkedin: document.getElementById('linkedin').value,
+    portfolio: document.getElementById('portfolio').value,
+    summary: document.getElementById('summary').value,
+    experiences: collectExp(),
+    educations: collectEdu(),
+    skills,
+    jobDesc: document.getElementById('jobDesc').value,
+    style: document.getElementById('resumeStyle').value
+  };
+
+  document.getElementById('genError').classList.remove('show');
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('emptyPreview').style.display = 'none';
+  startLoading();
+
+  const prompt = `You are a professional resume writer and career coach. Build a complete, ATS-optimised resume.
+
+Candidate Data:
+${JSON.stringify(data, null, 2)}
+
+Instructions:
+1. Write a powerful 2-3 sentence professional summary (much better than what they gave)
+2. For each experience, write 3-4 strong bullet points using action verbs and metrics
+3. Optimise all content for ATS keywords based on job description (if provided)
+4. Style: ${data.style}
+5. Score the resume out of 100 for ATS compatibility
+6. Give 3 improvement suggestions
+
+Respond ONLY with valid JSON, no markdown, no backticks:
+{
+  "summary": "improved professional summary here",
+  "experiences": [
+    {
+      "title": "job title",
+      "company": "company name",
+      "start": "start date",
+      "end": "end date",
+      "location": "location",
+      "bullets": ["bullet 1", "bullet 2", "bullet 3", "bullet 4"]
+    }
+  ],
+  "educations": [
+    {
+      "degree": "degree name",
+      "school": "school name",
+      "year": "year",
+      "grade": "grade"
+    }
+  ],
+  "skills": ["skill1", "skill2"],
+  "ats_score": 85,
+  "ats_feedback": "brief feedback on ATS score",
+  "improvements": ["suggestion 1", "suggestion 2", "suggestion 3"]
+}`;
+
+  try {
+    const response = await fetch('http://localhost:3000', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          { role: 'system', content: 'You are an expert resume writer. Always respond with valid JSON only. No markdown, no backticks.' },
+          { role: 'user', content: prompt }
+        ]
+      })
+    });
+
+    const resp = await response.json();
+    if (resp.error) throw new Error(resp.error.message);
+
+    const raw = resp.content[0].text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(raw);
+
+    stopLoading();
+    renderResume(data, result);
+    document.getElementById('generateBtn').disabled = false;
+  } catch(err) {
+    stopLoading();
+    const eb = document.getElementById('genError');
+    eb.textContent = 'Error: ' + err.message;
+    eb.classList.add('show');
+    document.getElementById('generateBtn').disabled = false;
+    document.getElementById('emptyPreview').style.display = 'flex';
+    console.error(err);
+  }
+}
+
+// ── RENDER RESUME ──
+function renderResume(data, result) {
+  // ATS score bar
+  const score = result.ats_score || 80;
+  document.getElementById('atsBar').style.display = 'block';
+  document.getElementById('atsBar').innerHTML = `
+    <div class="ats-score-bar">
+      <div>
+        <div class="ats-score-label">ATS Score</div>
+        <div class="ats-score-num">${score}/100</div>
+      </div>
+      <div style="flex:1">
+        <div class="ats-bar"><div class="ats-fill" style="width:${score}%"></div></div>
+        <div style="font-size:.65rem;color:var(--ink3);margin-top:.3rem">${result.ats_feedback || ''}</div>
+      </div>
+    </div>
+    ${result.improvements ? `<div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:.8rem 1rem;margin-bottom:1rem;max-width:700px;margin-left:auto;margin-right:auto">
+      <div style="font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);margin-bottom:.5rem">💡 AI Suggestions</div>
+      ${result.improvements.map(s => `<div style="font-size:.75rem;color:var(--ink2);padding:.2rem 0;border-bottom:1px solid var(--border)">→ ${s}</div>`).join('')}
+    </div>` : ''}`;
+
+  // Contact line
+  const contactParts = [data.email, data.phone, data.location, data.linkedin, data.portfolio].filter(Boolean);
+
+  // Experiences
+  const expHTML = (result.experiences || []).map(e => `
+    <div class="resume-entry">
+      <div class="resume-entry-header">
+        <div class="resume-entry-title">${e.title}</div>
+        <div class="resume-entry-date">${e.start} – ${e.end}</div>
+      </div>
+      <div class="resume-entry-sub">${e.company}${e.location ? ' · ' + e.location : ''}</div>
+      <ul class="resume-entry-bullets">
+        ${(e.bullets||[]).map(b => `<li>${b}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+
+  // Education
+  const eduHTML = (result.educations || []).map(e => `
+    <div class="resume-entry">
+      <div class="resume-entry-header">
+        <div class="resume-entry-title">${e.degree}</div>
+        <div class="resume-entry-date">${e.year}</div>
+      </div>
+      <div class="resume-entry-sub">${e.school}${e.grade ? ' · ' + e.grade : ''}</div>
+    </div>`).join('');
+
+  // Skills
+  const skillsHTML = (result.skills || skills).map(s =>
+    `<span class="resume-skill-tag">${s}</span>`).join('');
+
+  const doc = document.getElementById('resumeDoc');
+  doc.innerHTML = `
+    <div class="resume-header-block">
+      <div class="resume-name">${data.name}</div>
+      <div class="resume-title">${data.jobTitle}</div>
+      <div class="resume-contact">${contactParts.join(' · ')}</div>
+    </div>
+
+    ${result.summary ? `
+    <div class="resume-section">
+      <div class="resume-section-title">Professional Summary</div>
+      <div class="resume-summary">${result.summary}</div>
+    </div>` : ''}
+
+    ${expHTML ? `
+    <div class="resume-section">
+      <div class="resume-section-title">Work Experience</div>
+      ${expHTML}
+    </div>` : ''}
+
+    ${eduHTML ? `
+    <div class="resume-section">
+      <div class="resume-section-title">Education</div>
+      ${eduHTML}
+    </div>` : ''}
+
+    ${skillsHTML ? `
+    <div class="resume-section">
+      <div class="resume-section-title">Skills</div>
+      <div class="resume-skills-grid">${skillsHTML}</div>
+    </div>` : ''}`;
+
+  doc.classList.add('show');
+  document.getElementById('downloadBtn').disabled = false;
+}
+
+// ── DOWNLOAD PDF ──
+function downloadPDF() {
+  window.print();
+}
+
+// ── INIT ──
+renderExpList();
+renderEduList();
+</script>
+
+<style>
+@media print {
+  .header, .form-panel, .preview-toolbar, .ats-score-bar, #atsBar { display: none !important; }
+  .preview-panel { background: white !important; padding: 0 !important; }
+  #resumeDoc { box-shadow: none !important; max-width: 100% !important; }
+  .app { grid-template-columns: 1fr !important; }
+}
+</style>
+
+</body>
+</html>
