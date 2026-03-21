@@ -3,12 +3,8 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-// =============================================
-//  PASTE YOUR FREE GROQ API KEY HERE
-//  Get it free at: console.groq.com
-// =============================================
-const API_KEY = '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';
-// =============================================
+
+const API_KEY = 'gsk_7YlLERcc5HCZb6wZMLfJWGdyb3FYS3l6TalS3CRB0mp2QtjIAGcchsuya';
 
 http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
